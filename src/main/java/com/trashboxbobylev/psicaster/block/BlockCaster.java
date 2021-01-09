@@ -1,6 +1,11 @@
 package com.trashboxbobylev.psicaster.block;
 
+import com.trashboxbobylev.psicaster.PSICaster;
+import com.trashboxbobylev.psicaster.client.GuiCaster;
+import com.trashboxbobylev.psicaster.init.GuiInit;
+import com.trashboxbobylev.psicaster.tile.TileCaster;
 import io.github.phantamanta44.libnine.block.L9Block;
+import io.github.phantamanta44.libnine.util.world.WorldBlockPos;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
@@ -9,8 +14,10 @@ import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +36,9 @@ public class BlockCaster extends L9Block
         this.setDefaultState(this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
         this.setUnlocalizedName("psicaster.caster");
         setCreativeTab(PsiCreativeTab.INSTANCE);
+        this.setTileFactory((w, m) -> {
+            return new TileCaster();
+        });
     }
 
     public boolean isFullCube(IBlockState state) {
@@ -47,6 +57,25 @@ public class BlockCaster extends L9Block
 
     public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
         worldIn.setBlockState(pos, state.withProperty(FACING, EnumFacing.getDirectionFromEntityLiving(pos, placer)));
+    }
+
+    public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+        if (!world.isRemote) {
+            PSICaster.INSTANCE.getGuiHandler().openGui(player, GuiInit.CASTER, new WorldBlockPos(world, pos));
+        }
+
+        return true;
+    }
+
+    @Override
+    public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
+        super.neighborChanged(state, worldIn, pos, blockIn, fromPos);
+        if (!worldIn.isRemote){
+            TileCaster tile = getTileEntity(worldIn, pos);
+            if (tile != null){
+
+            }
+        }
     }
 
     @Nullable
