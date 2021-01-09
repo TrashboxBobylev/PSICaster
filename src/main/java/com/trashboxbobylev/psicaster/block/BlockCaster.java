@@ -73,7 +73,7 @@ public class BlockCaster extends L9Block
         if (!worldIn.isRemote){
             TileCaster tile = getTileEntity(worldIn, pos);
             if (tile != null){
-
+                tile.checkRedstone();
             }
         }
     }

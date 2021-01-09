@@ -67,6 +67,11 @@ public class TileCaster extends L9TileEntityTicking {
     }
 
     @Override
+    protected void tick() {
+
+    }
+
+    @Override
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setBoolean("redstonePowered", redstonePowered);
@@ -74,7 +79,7 @@ public class TileCaster extends L9TileEntityTicking {
     }
 
 
-        public void checkRedstone(){
+    public void checkRedstone(){
         boolean isIndirectlyPowered = (getWorld().isBlockIndirectlyGettingPowered(pos) != 0);
         if (isIndirectlyPowered && !redstonePowered) {
             redstoneChanged(true);
@@ -124,7 +129,9 @@ public class TileCaster extends L9TileEntityTicking {
         }
         player.get().rotationYaw = getYawFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
 
-        if (((PsiCell)battery.getItem()).getStoredCharge() >= 0) {
+        if (OptUtils.stackTag(battery).map((t) -> {
+            return t.getInteger("PsioCharge");
+        }).orElse(0) >= 0) {
             ISpellAcceptor spellContainer = ISpellAcceptor.acceptor(bullet);
             Spell spell = spellContainer.getSpell();
             SpellContext context = new SpellContext().setPlayer(player.get()).setSpell(spell);
