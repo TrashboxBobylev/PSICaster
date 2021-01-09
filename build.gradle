@@ -87,6 +87,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+    compile fg.deobf("curse.maven:autoreglib-250363:2746011")
     compile fg.deobf("curse.maven:psi-241665:3085917")
     compile fg.deobf("curse.maven:psio-339394:3077697")
     compile fg.deobf("curse.maven:libnine-322344:3073839")

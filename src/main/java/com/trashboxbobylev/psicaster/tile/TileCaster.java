@@ -1,17 +1,46 @@
 package com.trashboxbobylev.psicaster.tile;
 
+import com.trashboxbobylev.psicaster.CasterConfig;
+import com.trashboxbobylev.psicaster.block.BlockCaster;
+import com.trashboxbobylev.psicaster.util.FakePlayerUtil;
 import io.github.phantamanta44.libnine.capability.impl.L9AspectInventory;
 import io.github.phantamanta44.libnine.tile.L9TileEntityTicking;
 import io.github.phantamanta44.libnine.tile.RegisterTile;
 import io.github.phantamanta44.libnine.util.data.serialization.AutoSerialize;
 import io.github.phantamanta44.libnine.util.helper.OptUtils;
+import io.github.phantamanta44.libnine.util.nbt.NBTUtils;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayer;
 import vazkii.psi.api.cad.EnumCADComponent;
 import vazkii.psi.api.cad.ICADComponent;
 import vazkii.psi.api.cad.ISocketableCapability;
-import vazkii.psi.api.spell.ISpellContainer;
+import vazkii.psi.api.internal.DummyPlayerData;
+import vazkii.psi.api.internal.PsiRenderHelper;
+import vazkii.psi.api.internal.Vector3;
+import vazkii.psi.api.spell.*;
+import vazkii.psi.common.Psi;
+import vazkii.psi.common.core.handler.PsiSoundHandler;
+import vazkii.psi.common.item.ItemCAD;
+import vazkii.psi.common.item.base.ModItems;
+import vazkii.psi.common.item.component.ItemCADAssembly;
 import vazkii.psi.common.item.component.ItemCADCore;
+import vazkii.psi.common.item.component.ItemCADSocket;
 import xyz.phanta.psicosts.capability.PsiCell;
 import xyz.phanta.psicosts.init.PsioCaps;
+
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 @RegisterTile("psicaster")
 public class TileCaster extends L9TileEntityTicking {
@@ -52,7 +81,121 @@ public class TileCaster extends L9TileEntityTicking {
         }
     }
 
+    public static float getYawFromFacing(EnumFacing currentFacing) {
+        switch (currentFacing) {
+            case DOWN:
+            case UP:
+            case SOUTH:
+            default:
+                return 0;
+            case EAST:
+                return 270F;
+            case NORTH:
+                return 180F;
+            case WEST:
+                return 90F;
+        }
+    }
+
     public void castStuff(){
+        ItemStack bullet = inventory.getStackInSlot(1);
+        ItemStack battery = inventory.getStackInSlot(0);
+        ItemStack core = inventory.getStackInSlot(2);
+        ItemStack assembly = new ItemCADAssembly().getDefaultInstance();
+        assembly.setItemDamage(5);
+        ItemStack socket = new ItemCADSocket().getDefaultInstance();
+        socket.setItemDamage(3);
+
+        //create fake cad from our resources
+        ItemStack cad = ItemCAD.makeCADWithAssembly(assembly, Arrays.asList(core, socket));
+
+        WeakReference<FakePlayer> player = FakePlayerUtil.initFakePlayer((WorldServer) getWorld(), UUID.randomUUID(), "caster");
+        if (player == null){
+            return;
+        }
+        player.get().rotationYaw = getYawFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
+
+        if (((PsiCell)battery.getItem()).getStoredCharge() >= 0) {
+            ISpellAcceptor spellContainer = ISpellAcceptor.acceptor(bullet);
+            Spell spell = spellContainer.getSpell();
+            SpellContext context = new SpellContext().setPlayer(player.get()).setSpell(spell);
+
+            Consumer<SpellContext> predicate = (ctx -> ctx.castFrom = player.get().getActiveHand());
+            predicate.accept(context);
+
+            if (context.isValid()){
+                if (context.cspell.metadata.stats.get(EnumSpellStat.POTENCY) > CasterConfig.maxSpellPotency) {
+                    if (!world.isRemote) {
+                        player.get().sendMessage(new TextComponentTranslation("psimisc.weak_cad").setStyle(new Style().setColor(TextFormatting.RED)));
+                    }
+                }
+                else if (context.cspell.metadata.evaluateAgainst(cad)){
+                    int cost = context.cspell.metadata.stats.get(EnumSpellStat.COST);
+                    cost *= ISpellAcceptor.acceptor(bullet).getCostModifier();
+                    PreSpellCastEvent event = new PreSpellCastEvent(cost, 1.5F, 25, 1, spell, context, player.get(), new DummyPlayerData(), cad, bullet);
+                    if (MinecraftForge.EVENT_BUS.post(event)) {
+                        String cancelMessage = event.getCancellationMessage();
+                        if (cancelMessage != null && !cancelMessage.isEmpty())
+                            player.get().sendMessage(new TextComponentTranslation(cancelMessage).setStyle(new Style().setColor(TextFormatting.RED)));
+                        return;
+                    }
+
+                    int cd = event.getCooldown();
+                    int particles = event.getParticles();
+                    float sound = event.getSound();
+                    cost = event.getCost();
+
+                    spell = event.getSpell();
+                    context = event.getContext();
+
+                    if (cost > 0) {
+                        int charge = OptUtils.stackTag(battery).map((t) -> {
+                            return t.getInteger("PsioCharge");
+                        }).orElse(0);
+                        battery.getTagCompound().setInteger("PsioCharge", charge - cost);
+                    }
+
+                    if (!world.isRemote)
+                        world.playSound(null, player.get().posX, player.get().posY, player.get().posZ, PsiSoundHandler.cadShoot, SoundCategory.PLAYERS, sound, (float) (0.5 + Math.random() * 0.5));
+                    else {
+                        int color = Psi.proxy.getColorForCAD(cad);
+                        float r = PsiRenderHelper.r(color) / 255F;
+                        float g = PsiRenderHelper.g(color) / 255F;
+                        float b = PsiRenderHelper.b(color) / 255F;
+                        for (int i = 0; i < particles; i++) {
+                            double x = player.get().posX + (Math.random() - 0.5) * 2.1 * player.get().width;
+                            double y = player.get().posY - player.get().getYOffset();
+                            double z = player.get().posZ + (Math.random() - 0.5) * 2.1 * player.get().width;
+                            float grav = -0.15F - (float) Math.random() * 0.03F;
+                            Psi.proxy.sparkleFX(x, y, z, r, g, b, grav, 0.25F, 15);
+                        }
+
+                        double x = player.get().posX;
+                        double y = player.get().posY + player.get().getEyeHeight() - 0.1;
+                        double z = player.get().posZ;
+                        Vector3 lookOrig = new Vector3(player.get().getLookVec());
+                        for (int i = 0; i < 25; i++) {
+                            Vector3 look = lookOrig.copy();
+                            double spread = 0.25;
+                            look.x += (Math.random() - 0.5) * spread;
+                            look.y += (Math.random() - 0.5) * spread;
+                            look.z += (Math.random() - 0.5) * spread;
+                            look.normalize().multiply(0.15);
+
+                            Psi.proxy.sparkleFX(x, y, z, r, g, b, (float) look.x, (float) look.y, (float) look.z, 0.3F, 5);
+                        }
+                    }
+
+                    if (!world.isRemote)
+                        spellContainer.castSpell(context);
+                    MinecraftForge.EVENT_BUS.post(new SpellCastEvent(spell, context, player.get(), new DummyPlayerData(), cad, bullet));
+                    return;
+                } else if (!world.isRemote) {
+                    player.get().sendMessage(new TextComponentTranslation("psimisc.weak_cad").setStyle(new Style().setColor(TextFormatting.RED)));
+                }
+            }
+        }
+
 
     }
 }
