@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "facing=down": { "model": "psicaster:caster", "x": 90 },
+        "facing=up": { "model": "psicaster:caster", "x": 270 },
+        "facing=north": { "model": "psicaster:caster" },
+        "facing=south": { "model": "psicaster:caster", "y": 180 },
+        "facing=west": { "model": "psicaster:caster", "y": 270 },
+        "facing=east": { "model": "psicaster:caster", "y": 90 }
+	}
+}

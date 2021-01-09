@@ -1,0 +1,8 @@
+{
+    "parent": "block/cube_bottom_top",
+    "textures": {
+        "bottom": "psicaster:blocks/caster_bottom",
+        "side": "psicaster:blocks/caster_side",
+        "top": "psicaster:blocks/caster_top"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "parent": "block/piston",
+    "textures": {
+        "bottom": "psicaster:blocks/caster_bottom",
+        "side": "psicaster:blocks/caster_side",
+        "platform": "psicaster:blocks/caster_top"
+    }
+}

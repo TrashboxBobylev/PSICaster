@@ -89,7 +89,7 @@ dependencies {
 
     compile fg.deobf("curse.maven:psi-241665:3085917")
     compile fg.deobf("curse.maven:psio-339394:3077697")
-    compile fg.deobf("curse.maven:libnine-322344:3073839")
+    compile "curse.maven:libnine-322344:3073839"
 
 }
 
