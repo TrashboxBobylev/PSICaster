@@ -45,7 +45,6 @@ import java.util.function.Consumer;
 @RegisterTile("psicaster")
 public class TileCaster extends L9TileEntityTicking {
 
-    @AutoSerialize
     public boolean redstonePowered;
 
     public TileCaster() {
@@ -60,12 +59,22 @@ public class TileCaster extends L9TileEntityTicking {
             .withPredicate(1, s -> s.getItem() instanceof ISpellContainer && ((ISpellContainer)s.getItem()).containsSpell(s))
             .withPredicate(2, s -> (s.getItem() instanceof ICADComponent) && ((ICADComponent)s.getItem()).getComponentType(s) == EnumCADComponent.CORE);
 
-    @Override
-    protected void tick() {
 
+    @Override
+    public void readFromNBT(NBTTagCompound compound) {
+        super.readFromNBT(compound);
+        if(compound.hasKey("redstonePowered")) redstonePowered = compound.getBoolean("redstonePowered");
     }
 
-    public void checkRedstone(){
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+        compound = super.writeToNBT(compound);
+        compound.setBoolean("redstonePowered", redstonePowered);
+        return compound;
+    }
+
+
+        public void checkRedstone(){
         boolean isIndirectlyPowered = (getWorld().isBlockIndirectlyGettingPowered(pos) != 0);
         if (isIndirectlyPowered && !redstonePowered) {
             redstoneChanged(true);
