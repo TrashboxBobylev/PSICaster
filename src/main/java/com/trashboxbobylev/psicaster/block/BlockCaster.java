@@ -13,6 +13,7 @@ import net.minecraft.block.properties.PropertyDirection;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -35,7 +36,7 @@ public class BlockCaster extends L9Block
         super("caster", Material.ANVIL);
         this.setDefaultState(this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
         this.setUnlocalizedName("psicaster.caster");
-        setCreativeTab(PsiCreativeTab.INSTANCE);
+        setCreativeTab(CreativeTabs.REDSTONE);
         this.setTileFactory((w, m) -> {
             return new TileCaster();
         });
