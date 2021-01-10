@@ -1,6 +1,7 @@
 package com.trashboxbobylev.psicaster.tile;
 
 import com.trashboxbobylev.psicaster.CasterConfig;
+import com.trashboxbobylev.psicaster.PSICaster;
 import com.trashboxbobylev.psicaster.block.BlockCaster;
 import com.trashboxbobylev.psicaster.util.FakePlayerUtil;
 import io.github.phantamanta44.libnine.capability.impl.L9AspectInventory;
@@ -13,6 +14,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -20,9 +22,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
-import vazkii.psi.api.cad.EnumCADComponent;
-import vazkii.psi.api.cad.ICADComponent;
-import vazkii.psi.api.cad.ISocketableCapability;
+import vazkii.psi.api.cad.*;
 import vazkii.psi.api.internal.DummyPlayerData;
 import vazkii.psi.api.internal.PsiRenderHelper;
 import vazkii.psi.api.internal.Vector3;
@@ -39,6 +39,7 @@ import xyz.phanta.psicosts.init.PsioCaps;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -115,23 +116,26 @@ public class TileCaster extends L9TileEntityTicking {
         ItemStack bullet = inventory.getStackInSlot(1);
         ItemStack battery = inventory.getStackInSlot(0);
         ItemStack core = inventory.getStackInSlot(2);
-        ItemStack assembly = new ItemCADAssembly().getDefaultInstance();
-        assembly.setItemDamage(5);
-        ItemStack socket = new ItemCADSocket().getDefaultInstance();
-        socket.setItemDamage(3);
+        ItemStack assembly = new ItemStack(ModItems.cadAssembly, 1, 5);
+        ItemStack socket = new ItemStack(ModItems.cadSocket, 1, 3);
 
         //create fake cad from our resources
-        ItemStack cad = ItemCAD.makeCADWithAssembly(assembly, Arrays.asList(core, socket));
+        ItemStack cad = ItemCAD.makeCAD(Arrays.asList(assembly, core, socket));
+        PSICaster.LOGGER.debug(cad);
 
         WeakReference<FakePlayer> player = FakePlayerUtil.initFakePlayer((WorldServer) getWorld(), UUID.randomUUID(), "caster");
         if (player == null){
             return;
         }
         player.get().rotationYaw = getYawFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
+        player.get().setPosition(this.getPos().getX(), this.getPos().getY(), this.getPos().getZ());
+        player.get().setHeldItem(EnumHand.MAIN_HAND, cad);
 
-        if (OptUtils.stackTag(battery).map((t) -> {
+        int charge = OptUtils.stackTag(battery).map((t) -> {
             return t.getInteger("PsioCharge");
-        }).orElse(0) >= 0) {
+        }).orElse(0);
+
+        if (charge >= 0) {
             ISpellAcceptor spellContainer = ISpellAcceptor.acceptor(bullet);
             Spell spell = spellContainer.getSpell();
             SpellContext context = new SpellContext().setPlayer(player.get()).setSpell(spell);
@@ -140,14 +144,17 @@ public class TileCaster extends L9TileEntityTicking {
             predicate.accept(context);
 
             if (context.isValid()){
+                int cost = context.cspell.metadata.stats.get(EnumSpellStat.COST);
+                cost *= ISpellAcceptor.acceptor(bullet).getCostModifier();
                 if (context.cspell.metadata.stats.get(EnumSpellStat.POTENCY) > CasterConfig.maxSpellPotency) {
                     if (!world.isRemote) {
                         player.get().sendMessage(new TextComponentTranslation("psimisc.weak_cad").setStyle(new Style().setColor(TextFormatting.RED)));
                     }
                 }
-                else if (context.cspell.metadata.evaluateAgainst(cad)){
-                    int cost = context.cspell.metadata.stats.get(EnumSpellStat.COST);
-                    cost *= ISpellAcceptor.acceptor(bullet).getCostModifier();
+
+
+                else if (context.cspell.metadata.evaluateAgainst(cad) && charge >= cost){
+
                     PreSpellCastEvent event = new PreSpellCastEvent(cost, 1.5F, 25, 1, spell, context, player.get(), new DummyPlayerData(), cad, bullet);
                     if (MinecraftForge.EVENT_BUS.post(event)) {
                         String cancelMessage = event.getCancellationMessage();
@@ -165,9 +172,6 @@ public class TileCaster extends L9TileEntityTicking {
                     context = event.getContext();
 
                     if (cost > 0) {
-                        int charge = OptUtils.stackTag(battery).map((t) -> {
-                            return t.getInteger("PsioCharge");
-                        }).orElse(0);
                         battery.getTagCompound().setInteger("PsioCharge", charge - cost);
                     }
 
