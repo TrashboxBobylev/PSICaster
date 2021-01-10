@@ -1,0 +1,29 @@
+{
+  "type": "forge:ore_shaped",
+  "pattern": [
+    " p ",
+    "ded",
+    "aaa"
+  ],
+  "key": {
+    "p": {
+      "item": "minecraft:piston",
+      "data": 0
+    },
+    "e": {
+      "item": "psi:cad_assembly",
+      "data": 3
+    },
+    "d": {
+      "item": "psi:psi_decorative",
+      "data": 1
+    },
+    "a": {
+      "item": "psi:material",
+      "data": 4
+    }
+  },
+  "result": {
+    "item": "psicaster:caster"
+  }
+}

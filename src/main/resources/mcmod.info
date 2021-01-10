@@ -8,9 +8,11 @@
   "url": "",
   "updateUrl": "",
   "authorList": ["TrashboxBobylev"],
-  "credits": "The Forge and FML guys, for making this example",
+  "credits": "Vazkii, DaedalusGame, LothRazar, Qmunity for various pieces of code",
   "logoFile": "",
   "screenshots": [],
-  "dependencies": []
+  "dependencies": [],
+  "useDependencyInformation": true,
+  "requiredMods": ["libnine@[1.2.0,)", "psi", "autoreglib"]
 }
 ]
