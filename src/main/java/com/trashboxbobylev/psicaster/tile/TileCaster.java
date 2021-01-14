@@ -5,11 +5,16 @@ import com.trashboxbobylev.psicaster.PSICaster;
 import com.trashboxbobylev.psicaster.block.BlockCaster;
 import com.trashboxbobylev.psicaster.util.FakePlayerUtil;
 import io.github.phantamanta44.libnine.capability.impl.L9AspectInventory;
+import io.github.phantamanta44.libnine.capability.provider.CapabilityBroker;
+import io.github.phantamanta44.libnine.capability.provider.CapabilityBrokerDirPredicated;
 import io.github.phantamanta44.libnine.tile.L9TileEntityTicking;
 import io.github.phantamanta44.libnine.tile.RegisterTile;
 import io.github.phantamanta44.libnine.util.data.serialization.AutoSerialize;
 import io.github.phantamanta44.libnine.util.helper.OptUtils;
 import io.github.phantamanta44.libnine.util.nbt.NBTUtils;
+import io.github.phantamanta44.libnine.util.world.BlockSide;
+import io.github.phantamanta44.libnine.util.world.IAllocableSides;
+import io.github.phantamanta44.libnine.util.world.SideAlloc;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -21,7 +26,9 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.items.CapabilityItemHandler;
 import vazkii.psi.api.cad.*;
 import vazkii.psi.api.internal.DummyPlayerData;
 import vazkii.psi.api.internal.PsiRenderHelper;
@@ -44,7 +51,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 @RegisterTile("psicaster")
-public class TileCaster extends L9TileEntityTicking {
+public class TileCaster extends L9TileEntityTicking{
 
     public boolean redstonePowered;
 
@@ -60,6 +67,10 @@ public class TileCaster extends L9TileEntityTicking {
             .withPredicate(1, s -> s.getItem() instanceof ISpellContainer && ((ISpellContainer)s.getItem()).containsSpell(s))
             .withPredicate(2, s -> (s.getItem() instanceof ICADComponent) && ((ICADComponent)s.getItem()).getComponentType(s) == EnumCADComponent.CORE);
 
+    @Override
+    protected CapabilityBroker initCapabilities() {
+        return (new CapabilityBroker()).with(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, inventory);
+    }
 
     @Override
     public void readFromNBT(NBTTagCompound compound) {
