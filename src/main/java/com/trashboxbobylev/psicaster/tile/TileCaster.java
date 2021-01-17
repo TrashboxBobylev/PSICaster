@@ -135,7 +135,7 @@ public class TileCaster extends L9TileEntityTicking {
             return t.getInteger("PsioCharge");
         }).orElse(0);
 
-        if (charge >= 0) {
+        if (ISpellAcceptor.acceptor(bullet) != null && charge >= 0) {
             ISpellAcceptor spellContainer = ISpellAcceptor.acceptor(bullet);
             Spell spell = spellContainer.getSpell();
             SpellContext context = new SpellContext().setPlayer(player.get()).setSpell(spell);
