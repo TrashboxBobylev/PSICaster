@@ -7,6 +7,7 @@ import com.trashboxbobylev.psicaster.tile.TileCaster;
 import io.github.phantamanta44.libnine.block.L9Block;
 import io.github.phantamanta44.libnine.util.world.WorldBlockPos;
 import net.minecraft.block.Block;
+import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyDirection;
@@ -34,6 +35,9 @@ public class BlockCaster extends L9Block
     public BlockCaster()
     {
         super("caster", Material.ANVIL);
+        this.setHardness(5.0F);
+        this.setResistance(10.0F);
+        this.setSoundType(SoundType.METAL);
         this.setDefaultState(this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
         this.setUnlocalizedName("psicaster.caster");
         setCreativeTab(CreativeTabs.REDSTONE);
