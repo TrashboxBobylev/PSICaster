@@ -6,6 +6,7 @@ import com.trashboxbobylev.psicaster.init.GuiInit;
 import com.trashboxbobylev.psicaster.tile.TileCaster;
 import io.github.phantamanta44.libnine.block.L9Block;
 import io.github.phantamanta44.libnine.util.world.WorldBlockPos;
+import io.github.phantamanta44.libnine.util.world.WorldUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
@@ -117,6 +118,14 @@ public class BlockCaster extends L9Block
     {
         return new BlockStateContainer(this, FACING);
     }
-
-
+    
+    @Override
+    public void breakBlock(World world, BlockPos pos, IBlockState state) {
+        TileCaster tile = getTileEntity(world, pos);
+        if (tile != null) {
+        	for(int i = 0; i < tile.getInventory().getSlots() ; i++)
+            WorldUtils.dropItem(world, pos, tile.getInventory().getStackInSlot(i));
+        }
+        super.breakBlock(world, pos, state);
     }
+}
