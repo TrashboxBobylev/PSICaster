@@ -1,5 +1,6 @@
 package com.trashboxbobylev.psicaster.block;
 
+import com.google.common.collect.Lists;
 import com.trashboxbobylev.psicaster.PSICaster;
 import com.trashboxbobylev.psicaster.client.GuiCaster;
 import com.trashboxbobylev.psicaster.init.GuiInit;
@@ -11,6 +12,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.properties.PropertyDirection;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.BlockStateContainer;
@@ -23,16 +25,27 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import vazkii.psi.common.core.PsiCreativeTab;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
 public class BlockCaster extends L9Block
 {
     public static final PropertyDirection FACING = PropertyDirection.create("facing");
+    protected static final AxisAlignedBB EAST_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 0.3D, 1.0D, 1.0D);
+    protected static final AxisAlignedBB WEST_AABB = new AxisAlignedBB(0.7D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D);
+    protected static final AxisAlignedBB SOUTH_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 0.3D);
+    protected static final AxisAlignedBB NORTH_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.7D, 1.0D, 1.0D, 1.0D);
+    protected static final AxisAlignedBB UP_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.3D, 1.0D);
+    protected static final AxisAlignedBB DOWN_AABB = new AxisAlignedBB(0.0D, 0.7D, 0.0D, 1.0D, 1.0D, 1.0D);
+    
     public BlockCaster()
     {
         super("caster", Material.ANVIL);
@@ -127,5 +140,56 @@ public class BlockCaster extends L9Block
             WorldUtils.dropItem(world, pos, tile.getInventory().getStackInSlot(i));
         }
         super.breakBlock(world, pos, state);
+    }
+
+    private static List<AxisAlignedBB> getCollisionBoxList(IBlockState state)
+    {
+        List<AxisAlignedBB> list = Lists.<AxisAlignedBB>newArrayList();
+        EnumFacing facing = (EnumFacing)state.getValue(FACING);
+        
+        if(facing != EnumFacing.UP)
+            list.add(DOWN_AABB);
+        if(facing != EnumFacing.DOWN)
+        	list.add(UP_AABB);
+        if(facing != EnumFacing.EAST)
+        	list.add(WEST_AABB);
+        if(facing != EnumFacing.WEST)
+        	list.add(EAST_AABB);
+        if(facing != EnumFacing.NORTH)
+        	list.add(SOUTH_AABB);
+        if(facing != EnumFacing.SOUTH)
+        	list.add(NORTH_AABB);
+
+        return list;
+    }
+    
+    @Nullable
+    public RayTraceResult collisionRayTrace(IBlockState blockState, World worldIn, BlockPos pos, Vec3d start, Vec3d end)
+    {
+        List<RayTraceResult> list = Lists.<RayTraceResult>newArrayList();
+
+        for (AxisAlignedBB axisalignedbb : getCollisionBoxList(this.getActualState(blockState, worldIn, pos)))
+        {
+            list.add(this.rayTrace(pos, start, end, axisalignedbb));
+        }
+
+        RayTraceResult raytraceresult1 = null;
+        double d1 = 0.0D;
+
+        for (RayTraceResult raytraceresult : list)
+        {
+            if (raytraceresult != null)
+            {
+                double d0 = raytraceresult.hitVec.squareDistanceTo(end);
+
+                if (d0 > d1)
+                {
+                    raytraceresult1 = raytraceresult;
+                    d1 = d0;
+                }
+            }
+        }
+
+        return raytraceresult1;
     }
 }
