@@ -21,7 +21,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'java'
 apply plugin: 'com.matthewprenger.cursegradle'
 
-version = '1.0'
+version = '1.2'
 group = 'com.trashboxbobylev.psicaster' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'psicaster'
 

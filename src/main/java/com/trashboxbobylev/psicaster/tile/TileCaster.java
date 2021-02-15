@@ -109,17 +109,25 @@ public class TileCaster extends L9TileEntityTicking{
 
     public static float getYawFromFacing(EnumFacing currentFacing) {
         switch (currentFacing) {
-            case DOWN:
-            case UP:
-            case SOUTH:
             default:
                 return 0;
             case EAST:
-                return 270F;
+                return -90F;
             case NORTH:
                 return 180F;
             case WEST:
                 return 90F;
+        }
+    }
+    
+    public static float getPitchFromFacing(EnumFacing currentFacing) {
+        switch (currentFacing) {
+            default:
+                return 0F;
+            case DOWN:
+                return 90F;
+            case UP:
+                return -90F;
         }
     }
 
@@ -133,20 +141,22 @@ public class TileCaster extends L9TileEntityTicking{
         //create fake cad from our resources
         ItemStack cad = ItemCAD.makeCAD(Arrays.asList(assembly, core, socket));
         PSICaster.LOGGER.debug(cad);
-
+        
         WeakReference<FakePlayer> player = FakePlayerUtil.initFakePlayer((WorldServer) getWorld(), UUID.randomUUID(), "caster");
         if (player == null){
             return;
         }
         player.get().rotationYaw = getYawFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
-        player.get().setPosition(this.getPos().getX(), this.getPos().getY(), this.getPos().getZ());
+        player.get().rotationYawHead = getYawFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
+        player.get().rotationPitch = getPitchFromFacing(getWorld().getBlockState(pos).getValue(BlockCaster.FACING));
+        player.get().setPosition(this.getPos().getX()+0.5, this.getPos().getY()-1, this.getPos().getZ()+0.5);
         player.get().setHeldItem(EnumHand.MAIN_HAND, cad);
-
+       
         int charge = OptUtils.stackTag(battery).map((t) -> {
             return t.getInteger("PsioCharge");
         }).orElse(0);
 
-        if (charge >= 0) {
+        if (ISpellAcceptor.acceptor(bullet) != null && charge >= 0) {
             ISpellAcceptor spellContainer = ISpellAcceptor.acceptor(bullet);
             Spell spell = spellContainer.getSpell();
             SpellContext context = new SpellContext().setPlayer(player.get()).setSpell(spell);
@@ -216,7 +226,7 @@ public class TileCaster extends L9TileEntityTicking{
                             Psi.proxy.sparkleFX(x, y, z, r, g, b, (float) look.x, (float) look.y, (float) look.z, 0.3F, 5);
                         }
                     }
-
+                    
                     if (!world.isRemote)
                         spellContainer.castSpell(context);
                     MinecraftForge.EVENT_BUS.post(new SpellCastEvent(spell, context, player.get(), new DummyPlayerData(), cad, bullet));
@@ -228,5 +238,9 @@ public class TileCaster extends L9TileEntityTicking{
         }
 
 
+    }
+    
+    public L9AspectInventory getInventory() {
+        return inventory;
     }
 }
